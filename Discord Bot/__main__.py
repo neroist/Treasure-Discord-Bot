@@ -150,4 +150,4 @@ async def unload_cogs(ctx, extension):
     bot.unload_extension(f'cogs.{extension}')    
     await ctx.channel.send(f'{extension} was successfully unloaded')
 
-bot.run('Nzc0ODg0NzY1MjcwMTQ3MDgz.X6eRrA.eSpLPeQtQZkkqiQ-dYDaqZGh_XQ')
+bot.run('token')
