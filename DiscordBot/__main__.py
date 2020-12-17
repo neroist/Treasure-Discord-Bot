@@ -132,7 +132,7 @@ async def on_command_error(ctx, error):
             await ctx.send('Turn on NSFW to use this command in this channel.')
 
 
-for filename in listdir('C:\\Users\\pmpig\\Desktop\\Discord Bot\\cogs'):
+for filename in listdir('DiscordBot/cogs'):
     if filename.endswith('.py'):
         bot.load_extension(f'cogs.{filename[:-3]}')
 
