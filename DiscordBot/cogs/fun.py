@@ -1,39 +1,34 @@
 import discord
 from discord.ext import commands
-from random import *
+from random import choice
+import praw
+import json
+from replit import db
+from akinator.async_aki import Akinator
+import akinator
+import asyncio
 
 space = ' '
+reddit = praw.Reddit(client_id=db['reddit_id'], 
+    client_secret=db['reddit_secret'], 
+    password=db['reddit_password'], 
+    username="alt-acc-e", 
+    user_agent="webhook for python discord bot (by /u/alt-acc-e)")
 
 class Fun(commands.Cog):
     def __init__(self, client):
         self.client = client
         
-    @commands.has_permissions(send_messages=True)
-    @commands.command(name='8ball', help='| 8ball in discord, ask it a question')
+    @commands.command(name='8ball', help='| 8ball in discord, ask it a question', aliases=['8b'])
     async def _8ball(self, ctx, *, question):
         author = ctx.message.author
         pfp = author.avatar_url
-        phrases = [
-                "It is certain.",
-                "It is decidedly so.",
-                "Without a doubt.",
-                "Yes - definitely.",
-                "You may rely on it.",
-                "As I see it, yes.",
-                "Most likely.",
-                "Outlook good.",
-                "Yes.",
-                "Signs point to yes.",
-                "Reply hazy, try again.",
-                "Ask again later.",
-                "Better not tell you now.",
-                "Cannot predict now.",
-                "Concentrate and ask again.",
-                "Don't count on it.",
-                "My reply is no.",
-                "My sources say no.",
-                "Outlook not so good.",
-                "Very doubtful."]  
+
+        with open('DiscordBot/cogs/8_ball_phrases.json') as file:
+            phrases = json.load(file)
+            file.close()
+
+
         intuit = discord.Embed(
             title='8-Ball',
             colour=discord.Colour.blue()
@@ -46,80 +41,91 @@ class Fun(commands.Cog):
 
         await ctx.send(embed=intuit)
 
-    @commands.has_permissions(manage_messages=True)
-    @commands.command(name='spam', help='| Spams a certain message however many times you want, make sure to put quotes on what you want to spam')
-    async def spam_messages(self, ctx, message, iterby: int):
-        if message.startswith('.'):
-            await ctx.send('You can\'t spam commands! >:(')
-            return
-
-        if str(ctx.message.author) != 'The_Void#0156':
-            await ctx.send('This command is only available to the creator of the bot currently.')
-            return
-            
-        if iterby >= 150:
-            await ctx.send('i can\'t send that many messages.')
-            return
-        else:
-            await ctx.message.delete()
-            for i in range(iterby):
-                await ctx.channel.send(message)
-
-    @commands.has_permissions(send_messages=True)
     @commands.command(help='| tells a yo mama joke')
     async def yomama(self, ctx):
-        yo_mama_jokes = [
-            'Yo mama so ugly even Hello Kitty said good bye.',
-            'Yo mama so skinny when she swallowed a meatball everyone thought she was pregnant again.',
-            'Yo mama so ugly when she looks in the mirror her reflection ducks.',
-            "Yo mama so stupid she tried to put her M&Ms in alphabetical order.",
-            'Yo mama so stupid she went to the dentist to get a blue tooth.',
-            'Yo mama so stupid she got locked in a mattress store and slept on the floor.', 
-            'Yo mama so stupid she failed a survey.',
-            'Yo mama so stupid she got fired from a blow job.',
-            'Yo mama so stupid she thinks Taco Bell is a Mexican phone company. ',
-            'Yo mama so stupid she tried to climb Mountain Dew.',
-            'Yo mama so stupid she went to the YMCA thinking it\'s Macy\'s.',
-            'Yo mama is so stupid, she won\'t play Candy Crush cause she has diabetes.',
-            'Yo mama so old the back of her head looks like a raisin. ',
-            'Yo mama so old her social security number is 1. ',
-            'Yo mama so old when she was a child rainbows were still in black and white. ',
-            'Yo mama so old when she was in school there was no history class. ',
-            'Yo mama so old she has a picture of Moses in her yearbook.',
-            'Yo mama so old she was a crossing guard when Moses parted the red sea. ',
-            'Yo mama so old she was a waitress at the Last Supper.',
-            'Yo mama so old she has an autographed bible. ',
-            'Yo mama so old she knew Mr. Clean when he had an afro.',
-            'Yo mama so old she knew Gandalf before he had a beard.',
-            'Yo mama so fat she wears a sock on each toe. ',
-            'Yo mama so fat her belly button got an echo. ',
-            'Yo mama so fat you have to roll over twice to get off her. ',
-            'Yo mama so fat when she takes a bath there\'s no room left for any water in the tub. ',
-            'Yo mama so fat when I pictured her in my head I almost broke my neck. ',
-            'Yo mama so fat her blood type is Nutella.',
-            'Yo mama so fat she gave Dracula high cholesterol.',
-            'Yo mama so fat her ass has its own zip code.',
-            'Yo mama so fat she uses bacon as breath mints.',
-            'Yo mama so fat she uses Google Earth to take a selfie.',
-            'Yo mama so skinny she hula hoops with a cheerio.',
-            'Yo mama so skinny she can grate cheese on her ribs. ',
-            'Yo mama so skinny her nipples touch. ',
-            'Yo mama is so skinny she can dodge raindrops. ',
-            'Yo mama\'s so skinny when her pimp slapped her he got a paper cut. ',
-            'Yo mama so skinny she uses Chapstick for deodorant.',
-            'Yo mama so skinny she uses a tea bag as her pillow. ',
-            'Yo mama so skinny she uses a Band-Aid as a maxi-pad.',
-            'Yo mama so skinny when she swallowed a meatball everyone thought she was pregnant again.',
-            'Yo mama so skinny if she had a yeast infection she\'d be a Quarter Pounder with cheese.',
-            'Yo mama so poor she went to McDonald\'s and put a milkshake on layaway.',
-            'Yo mama so poor she has the ducks throw bread at her.',
-            'Yo mama so fat she uses Google Earth to take a selfie.',
-            'Yo mama so skinny she hula hoops with a cheerio.',
-            'Yo mama so hairy people think she\'s an Ewok.',
-            'Yo mama so poor when I saw her kicking a can down the street, I asked her what she was doing, she said "Moving.”'
-                ]
+        with open('DiscordBot/cogs/yo_mama.json') as jokes:
+            yo_mama_jokes = json.load(jokes)
+            jokes.close()
 
         await ctx.send(choice(yo_mama_jokes))
+
+    @commands.command(help='| Akinator', name='akinator')
+    async def _akinator(self, ctx, language='en'):
+        aki = Akinator()
+        nsfw = ctx.channel.is_nsfw()
+        valid = ['✅', '❌', '🔙', '🤷‍♀️']
+
+        def check(reaction, user):
+            return str(reaction.emoji) in valid and user == ctx.message.author
+
+        async def man():
+            q = await aki.start_game(language=language, child_mode=nsfw)
+    
+            embed = discord.Embed(title="\r\u200b", description=q)
+            mess = await ctx.send(embed=embed)
+            await mess.add_reaction('✅')
+            await mess.add_reaction('❌')
+            await mess.add_reaction('🔙')
+            await mess.add_reaction('🤷‍♀️')
+
+            while aki.progression <= 80:
+                reaction, user = await self.client.wait_for('reaction_add', timeout=120, check=check)
+                try:
+                    if str(reaction.emoji) == '🔙':
+                        try:
+                            q = await aki.back()
+                        except akinator.CantGoBackAnyFurther:
+                            pass
+                    elif str(reaction.emoji) == '❌':
+                        q = 'yes'
+                    elif str(reaction.emoji) == '✅':
+                        q = 'no'
+                    elif str(reaction.emoji) == '🤷‍♀️':
+                        q = 'idk'
+                except Exception as e:
+                    ctx.send(e)
+                finally:
+                    qe = await aki.answer(q)
+                    embed = discord.Embed(title='\r\u200b', description=qe)
+
+                    mess = await ctx.send(embed=embed)
+                    await mess.add_reaction('✅')
+                    await mess.add_reaction('❌')
+                    await mess.add_reaction('🔙')
+                    await mess.add_reaction('🤷‍♀️')
+
+                    
+            await aki.win()
+
+            first_guess = dict(aki.first_guess)
+            embed = discord.Embed(title=f"It's {first_guess['name']} ({first_guess['description']}!) Was I correct?", image=first_guess['absolute_picture_path'])
+            msg = await ctx.send(embed=embed)
+            await msg.add_reaction('✅')
+            await msg.add_reaction('❌')
+
+            try:
+                correct, user = await self.client.wait_for('reaction_add', timeout=120, check=check)
+            except asyncio.TimeoutError:
+                pass
+            
+            if str(correct.emoji) == "✅":
+                await ctx.send("Yay\n")
+            else:
+                await ctx.send("Oof\n")
+
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(man)
+        loop.close()
+
+    @commands.command(help='| Gives you some DANK memes from reddit')
+    async def meme(self, ctx, limit=1):
+        for submission in range(limit):
+            submission = reddit.subreddit(choice(['dankmemes', 'memes'])).random_rising()
+            embed = discord.Embed(title=submission.title, url=f'https://www.reddit.com{submission.permalink}')
+            embed.set_image(url=submission.url)
+
+            await ctx.send(embed=embed)
+        
 
 def setup(client):
     client.add_cog(Fun(client))
