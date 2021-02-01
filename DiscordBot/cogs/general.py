@@ -9,14 +9,6 @@ class General(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @commands.has_permissions(change_nickname=True, manage_nicknames=True)
-    @commands.command(help='| Changes a users nickname', aliases=['nickname', 'change_nickname', 'changenick', 'chn'])
-    async def nick(self, ctx, member: discord.Member, *, nickname):
-        await member.edit(nick=nickname)
-        await ctx.send(
-            f'Nickname was successfully changed for {member.mention} to {nickname}.'
-        )
-
     @commands.command(help='| gives info on given user', aliases=['wi', 'whoi', 'wis', 'memberinfo'])
     async def whois(self, ctx, member: discord.Member):
         if member.is_on_mobile:
@@ -42,6 +34,57 @@ class General(commands.Cog):
         embed.add_field(name='Id:', value=member.id, inline=True)
 
         embed.set_footer(text=f"Treasure • {now}")
+        await ctx.send(embed=embed)
+
+    @commands.command(help='to summon this command')
+    async def help(self, ctx, command=None):
+
+        if command == None:
+            embed = discord.Embed(title="**Help**", description="Thanks for using this bot! \n Bot created by Name12#1326 and The_Void#0156\n Do \"*help <command>\" for more information on a command!" , color=0xe74c3c)
+            for cog in self.client.cogs:
+
+                if cog.lower() == 'developer':
+                    pass
+                else:
+                    embed.add_field(name=f'*{cog.lower()}', value=f'See the {cog} commands')
+            embed.add_field(name='*help', value='to summon this command')
+
+            await ctx.send(embed=embed)
+        else:
+            command = self.client.get_command(command)
+
+            if command == None:
+                await ctx.send('Invalid command')
+                return
+            else:
+                embed = discord.Embed(title=f'*{command.name}', description=command.description)
+                await ctx.send(embed=embed)
+
+
+    @commands.command(help='General commands')
+    async def general(self, ctx):
+        embed =  discord.Embed(title="**General commands**", description=self.description)
+        for i in self.get_commands():
+            embed.add_field(name=f'*{i.name}', value=i.help)
+
+        await ctx.send(embed=embed)
+
+    @commands.command(help='Moderation commands')
+    async def moderation(self, ctx):
+        embed =  discord.Embed(title="**Moderation commands**", description=self.description)
+        for i in self.client.get_cog('Moderation').get_commands():
+            embed.add_field(name=f'*{i.name}', value=i.help)
+
+    @commands.command(help='go to the game page')
+    async def games(self, ctx):
+        embed = discord.Embed(title="Games", description="Welcome to game center")
+        embed.add_field(name="*dicegame", value="to play a dice game")
+        embed.add_field(name="*slot", value="to play a slot machhine")
+        embed.add_field(name="*roulette [number here]", value="to play roulette")
+        embed.add_field(name="*rps [choice here]", value="to play rock paper scissors")
+        embed.add_field(name="*yahtzee", value="to play yahtzee")
+        embed.add_field(name="*lottery <number1> <number2> <number3> <number4> <number5>", value="to have a round of a lottery")
+        embed.add_field(name='*akinator', value='Akinator, tries to guess whoever you are thinking about')
         await ctx.send(embed=embed)
 
     @commands.command(help='| Gives info on the server')
@@ -82,11 +125,13 @@ class General(commands.Cog):
     async def math(self, ctx, eqa: str):
         for it in eqa:
             if it in ascii_letters:
-                ctx.send('bruh no letters ik what ur tryna do')
+                await ctx.send('bruh no letters ik what ur tryna do')
                 return
 
         eqa.replace('^', '**')
         ctx.send(simple_eval(eqa))
+
+    
 
 
 def setup(client):

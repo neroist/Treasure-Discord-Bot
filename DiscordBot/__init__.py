@@ -5,7 +5,7 @@ import sys
 import asyncio
 from replit import db
 from discord.ext import commands, tasks
-from os import listdir
+import os
 from itertools import cycle
 import datetime as dt
 import pymongo

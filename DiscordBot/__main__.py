@@ -1,10 +1,10 @@
 from __init__ import  *
 
+#in shell do pip install dnspython akinator[fast_async]
 
-
-MClient = pymongo.MongoClient(f"mongodb+srv://{db['mongodb_username']}:{db['mongodb_password']}@{db['mongodb_cluster']}/Discord?retryWrites=true&w=majority")
-Mdb = MClient.Discord
-prefixes = Mdb.prefixes
+#MClient = pymongo.MongoClient(f"mongodb+srv://{db['mongodb_username']}:{db['mongodb_password']}@{db['mongodb_cluster']}/Discord?retryWrites=true&w=majority")
+#Mdb = MClient.Discord
+#prefixes = Mdb.prefixes
 
 badwords = []
 
@@ -16,7 +16,7 @@ def get_prefix(client, message):
     return thx[str(message.guild.id)]
 
 creator = 'The_Void#0156'
-bot = commands.Bot(command_prefix=get_prefix, case_insensitive=True, intents=discord.Intents.all())
+bot = commands.Bot(command_prefix=get_prefix, case_insensitive=True, intents=discord.Intents.all(), help_command=None)
 space = ' '
 
 @bot.event
@@ -157,7 +157,7 @@ async def on_reaction_add(reaction, user):
 #        await ctx.send('Turn on NSFW to use this command in this channel.')
 
 
-for filename in listdir('DiscordBot/cogs'):
+for filename in os.listdir('DiscordBot/cogs'):
     if filename.endswith('.py'):
         bot.load_extension(f'cogs.{filename[:-3]}')
 
@@ -170,7 +170,7 @@ async def load(ctx, extension):
     except:
         await ctx.send('Something went wrong')
     else:
-        await ctx.send(f'{extension} was successfully reloaded')
+        await ctx.send(f'{extension} was successfully loaded')
 
 @commands.has_permissions(administrator=True)
 @bot.command(help='| Unloads a loaded category. similiar to enable/disable')
@@ -180,22 +180,19 @@ async def unload(ctx, extension):
     except:
         await ctx.send('Something went wrong')
     else:
-        await ctx.send(f'{extension} was successfully reloaded')
+        await ctx.send(f'{extension} was successfully unloaded')
 
 @commands.has_permissions(administrator=True)
 @bot.command(help='| Reloads an loaded category')
 async def reload(ctx, extension):
     try:
-        bot.unload_extension(f'cogs.{extension}')
-        bot.load_extension(f'cogs.{extension}')
+        bot.reload_extension(f'cogs.{extension}')
     except:
         await ctx.send('Something went wrong')
     else:
         await ctx.send(f'{extension} was successfully reloaded')
 
 if __name__ == '__main__':
-    sys('pip install dnspython')
-    sys('pip install akinator')
     from keep_alive import keep_alive
     keep_alive()
     bot.run(db['BOT_TOKEN'])

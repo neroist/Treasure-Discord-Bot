@@ -3,16 +3,26 @@ import discord
 import math 
 import json
 from discord.ext import commands
+import re
 
 space = ' '
 checkmark = ":white_check_mark:"
+is_nuking = False
 
 class Moderation(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @commands.has_permissions(ban_members=True)
+    @commands.has_permissions(change_nickname=True, manage_nicknames=True)
+    @commands.command(help='| Changes a users nickname', aliases=['nickname', 'change_nickname', 'changenick', 'chn'])
+    async def nick(self, ctx, member: discord.Member, *, nickname):
+        await member.edit(nick=nickname)
+        await ctx.send(
+            f'Nickname was successfully changed for {member.mention} to {nickname}.'
+        )
+
     @commands.command(help='| bans given user')
+    @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, member: discord.Member, *, reason=None):
 
         if member == ctx.message.author:
@@ -36,8 +46,8 @@ class Moderation(commands.Cog):
         )
         await member.send(embed=inked)
 
-    @commands.has_permissions(kick_members=True)
     @commands.command(help='| Removes given user from the server')
+    @commands.has_permissions(kick_members=True)
     async def kick(self, ctx, member: discord.Member, *, reason=None):
 
         if member == ctx.message.author:
@@ -91,13 +101,13 @@ class Moderation(commands.Cog):
                 time = int(tim[:-1])
 
         ban_embed = discord.Embed(
-            title='Temp-Ban',
+            title='Temp Ban',
             description=f'{ctx.message.author} has banned {member.name}!',
-            color=discord.Colour.dark_red()
+            color=0x992d22
         )
 
         ban_embed.add_field(name='Reason: ', value=reason, inline=True)
-        ban_embed.add_field(name='Time: ', value=time)
+        ban_embed.add_field(name='Time: ', value=time, inline=True)
 
         await ctx.send(embed=ban_embed)
 
@@ -110,8 +120,10 @@ class Moderation(commands.Cog):
     async def blacklist(self, ctx, *words):
         words = list(words)
 
-        with open('cogs/blacklisted.json', 'r+') as file:
+        with open('cogs/blacklisted.json') as file:
             blacklisted = json.load(file)
+            file.close()
+        with open('cogs/blacklisted.json', 'w') as file:
             blacklisted[str(ctx.guild.id)] = []
             wierd = blacklisted[str(ctx.guild.id)]
 
@@ -119,8 +131,59 @@ class Moderation(commands.Cog):
             json.dump(blacklisted, file, indent=4)
             file.close()
 
-        ctx.send(f'{checkmark}\nWords: {words} were successfully blacklisted.\nWill update in aprox. 5 minutes')
+        embed = discord.Embed(title=checkmark, description=f'Words: {words} were successfully blacklisted.\nWill update in aprox. 5 minutes')
+
+        ctx.send(embed=embed)
+
+    @commands.command(help='| deletes ALL messages from the channel you\'re in')
+    @commands.has_permissions(administrator=True)
+    async def nuke(self, ctx, channel=None):
+        global is_nuking
+
+        if is_nuking:
+            await ctx.send('busy rn cant do it')
+            return
+
+        if channel == None:
+            channel = ctx.channel
+
+        valid = ['yes', 'y', 'no', 'n']
+
+        check = lambda message: message.author == ctx.message.author and message.content.lower() in valid
+
+        await ctx.send('Are you sure? (Y/N)')
+        mess = await self.client.wait_for('message', timeout=60, check=check)
+        cont=mess.content.lower()
+
+        if cont == valid[0] or cont == valid[1]:
+            await ctx.send('BLOOD FOR THE BLOOD GOD')
+
+            async for _message in channel.history(limit=None):
+                if _message.author == self.client.user and _message.content == 'BLOOD FOR THE BLOOD GOD':
+                    pass
+                else:
+                    await _message.delete()
+            
+        elif cont == valid[2] or cont == valid[3]:
+            await ctx.send('Nuke aborted.')
+            return
+        else:
+            await ctx.send('Invalid input, aborting nuke.')
+            return       
+
+    @commands.command(help='Mutes a user from the current server')
+    @commands.guild_only()
+    @commands.has_permissions(manage_roles=True, manage_messages=True)
+    async def mute(self, ctx, member: discord.Member, *, reason: str = None):
+        """ Mutes a user from the current server. """
+        pass
         
+    @commands.command(help='Unmutes a user from the current server.')
+    @commands.guild_only()
+    @commands.has_permissions(manage_roles=True, manage_messages=True)
+    async def unmute(self, ctx, member: discord.Member, *, reason: str = None):
+        """ Unmutes a user from the current server. """
+        pass
 
 
 def setup(client):
