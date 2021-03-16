@@ -9,12 +9,13 @@ import json
 from random import choice
 
 class Games(commands.Cog):
-
     def __init__(self, bot):
         self.client = bot
 
     @commands.command()
     async def dicegame(self, ctx):
+        """Play a dice game where you and the bot rolls. If the number you rolled is higher than what the bot did, you win and vice versa."""
+
         embed = discord.Embed(title="Dice game!", description="")
         number1 = random.randint(1,12)
         number2 = random.randint(1,12)
@@ -34,36 +35,36 @@ class Games(commands.Cog):
     #normal version
     @commands.command()
     async def slot(self, ctx):
-    	embed = discord.Embed(title="Slot Machhine", description="")
-    	slots = "@","#","$","%","&","*","£","¢","§","€","‡","+"
-    	if os.getenv('rigd')==True:
-    		while True:  
-    			slot1 = random.choice(slots)
-    			slot2 = random.choice(slots)
-    			slot3 = random.choice(slots)
-    			if slot1==slot2 and slot1==slot3:
-    				slot1 = random.choice(slots)
-    				slot2 = random.choice(slots)
-    				slot3 = random.choice(slots)
-    			else:
-    				break
-    	else:
-    		slot1 = random.choice(slots)
-    		slot2 = random.choice(slots)
-    		slot3 = random.choice(slots)
-    	des = "Your three slots are: " + slot1 + ", " + slot2 + " and " + slot3 + "."
-    	if slot1 == slot2 == slot3:
-    		title = "All of the slots were the same!!! Jackpot!!!"
-    	elif slot1 == slot2 and slot2 != slot3:
-    		title = "Two of the slots were the same!! Very lucky!!"
-    	elif slot2 == slot3 and slot2 != slot1:
-    		title = "Two of the slots were the same!! Very lucky!!"
-    	elif slot1 == slot3 and slot2 != slot1:
-    		title = "Two of the slots were the same!! Very lucky!!"
-    	elif slot1 != slot2 != slot3:
-    		title = "None of the slots were the same! Better luck next time!"
-    	embed.add_field(name=title, value=des)
-    	await ctx.send(embed=embed)
+        embed = discord.Embed(title="Slot Machhine", description="", colour=discord.Colour.green())
+        slots = ("💜", "🧨", "🧧", "🎡", "👑", "💎", "🏆", "📄", "🚲", "🚦", "🍜", "🍃", "💯")
+        if os.getenv('rigd')==True:
+        	while True:  
+        		slot1 = random.choice(slots)
+        		slot2 = random.choice(slots)
+        		slot3 = random.choice(slots)
+        		if slot1==slot2 and slot1==slot3:
+        			slot1 = random.choice(slots)
+        			slot2 = random.choice(slots)
+        			slot3 = random.choice(slots)
+        		else:
+        			break
+        else:
+        	slot1 = random.choice(slots)
+        	slot2 = random.choice(slots)
+        	slot3 = random.choice(slots)
+        des = "Your three slots are: " + slot1 + ", " + slot2 + " and " + slot3 + "."
+        if slot1 == slot2 == slot3:
+        	title = "All of the slots were the same!!! Jackpot!!!"
+        elif slot1 == slot2:
+        	title = "Two of the slots were the same!! Very lucky!!"
+        elif slot2 == slot3:
+        	title = "Two of the slots were the same!! Very lucky!!"
+        elif slot1 == slot3:
+        	title = "Two of the slots were the same!! Very lucky!!"
+        else:
+        	title = "None of the slots were the same! Better luck next time!"
+        embed.add_field(name=title, value=des)
+        await ctx.send(embed=embed)
 
     @commands.command()
     async def roulette(self, ctx, number):
@@ -85,7 +86,6 @@ class Games(commands.Cog):
     	Number3 = int(number3)
     	Number4 = int(number4)  
     	Number5 = int(number5)
-    	numbers = number1, number2, number3, number4, number5
     	Rand1 = random.randint(1,50)
     	rand1 = int(Rand1)
     	Rand2 = random.randint(1,50)
@@ -116,7 +116,7 @@ class Games(commands.Cog):
     @commands.command()
     async def rps(self, ctx, player):
         play = player.capitalize() 
-        all = "paper", "rock","scissors"
+        all = ["paper", "rock","scissors"]
         com = random.choice(all)
         com2 = com.capitalize() 
         if com2 == "Rock" and play == "Paper":
@@ -153,7 +153,7 @@ class Games(commands.Cog):
         def check(reaction, user):
             return str(reaction.emoji) in valid and user == ctx.message.author
 
-        async def man():
+        async def main():
             q = await aki.start_game(language=language, child_mode=nsfw)
 
             embed = discord.Embed(title="Akinator Asks", description=q)
@@ -209,7 +209,7 @@ class Games(commands.Cog):
 
         loop = asyncio.get_event_loop()
         #if this doesnt work try loop.run_until_complete(man) or loop.run_until_complete(await man())
-        loop.run_until_complete(man())
+        loop.run_until_complete(main())
         loop.close()
 
     @commands.command(name='8ball', help='| 8ball in discord, ask it a question', aliases=['8b'])

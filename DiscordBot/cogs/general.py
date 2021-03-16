@@ -1,127 +1,149 @@
-from datetime import date
 import discord
-import json
 from discord.ext import commands
+
+import json
+from datetime import date
 from simpleeval import simple_eval
 from string import ascii_letters
+
+pollDesu = """Usage: t.poll <question> <channel>\n\nParameters:\n    <question> - The question that is going into your poll\n   <channel> (optional) - the channel to post the poll into; can only be used by people that have the `Manage Channels` permissition"""
+
+
 
 class General(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @commands.command(help='| gives info on given user', aliases=['wi', 'whoi', 'wis', 'memberinfo'])
+    @commands.command(help='gives info on given user', aliases=['memberinfo'])
     async def whois(self, ctx, member: discord.Member):
-        if member.is_on_mobile:
+        if member.is_on_mobile():
             device = 'Mobile'
         else:
             device = 'Computer'
 
-        now = str(date.today())
-        roles = ' '.join(member.roles[:-1])
+        activity = member.activity
+        act_add = ''
 
-        embed = discord.Embed(title="User Info", color=discord.Colour.purple())
+        if activity.type == discord.ActivityType.playing:
+            act_add = 'playing '
+        elif activity.type == discord.ActivityType.listening:
+            act_add = 'listening to '
+        elif activity.type == discord.ActivityType.watching:
+            act_add = 'watching '
+        elif activity.type == discord.ActivityType.competing:
+            act_add = 'competing in '
+        elif activity.type == discord.ActivityType.streaming:
+            act_add = 'streaming '
+
+        activity = act_add + activity.name
+
+        now = str(date.today())
+        rroles = []
+
+        for i in member.roles[1:]:
+            rroles.append(i.mention)
+
+        #reverses the roles list, and casts it into a string 
+        roles = str(rroles[::-1])[1:-1]
+        roles = roles.replace("'", '')
+
+
+        embed = discord.Embed(title="User Info", color=member.colour)
         embed.add_field(name="Name:", value=member.name, inline=True)
-        embed.add_field(name="Joined Guild:", value=member.joined_at, inline=True)
-        embed.add_field(name='Discord Staff:', value=member.system, inline=True)
+        embed.add_field(name="Joined:", value=member.joined_at.strftime('%A, %B %d, %Y %I:%M %p'), inline=True)
+        embed.add_field(name='Created:', value=member.created_at.strftime('%A, %B %d, %Y %I:%M %p'), inline=True)
         embed.add_field(name='Status:', value=member.raw_status, inline=True)
-        embed.add_field(name="Activity:", value=member.activity, inline=True)
+        embed.add_field(name="Activity:", value=activity, inline=True)
         embed.add_field(name="Device:", value=device, inline=True)
         embed.add_field(name='Bot:', value=member.bot, inline=True)
         embed.add_field(name="Color:", value=member.colour, inline=True)
         embed.add_field(name='Roles:', value=roles, inline=True)
-        embed.add_field(name='Top Role', value=member.top_role, inline=True)
+        embed.add_field(name='Top Role', value=rroles[-1], inline=True)
         embed.add_field(name='Permissions:', value=member.guild_permissions, inline=True)
         embed.add_field(name='Id:', value=member.id, inline=True)
-
         embed.set_footer(text=f"Treasure • {now}")
-        await ctx.send(embed=embed)
-
-    @commands.command(help='to summon this command')
-    async def help(self, ctx, command=None):
-
-        if command == None:
-            embed = discord.Embed(title="**Help**", description="Thanks for using this bot! \n Bot created by Name12#1326 and The_Void#0156\n Do \"*help <command>\" for more information on a command!" , color=0xe74c3c)
-            for cog in self.client.cogs:
-
-                if cog.lower() == 'developer':
-                    pass
-                else:
-                    embed.add_field(name=f'*{cog.lower()}', value=f'See the {cog} commands')
-            embed.add_field(name='*help', value='to summon this command')
-
-            await ctx.send(embed=embed)
-        else:
-            command = self.client.get_command(command)
-
-            if command == None:
-                await ctx.send('Invalid command')
-                return
-            else:
-                embed = discord.Embed(title=f'*{command.name}', description=command.description)
-                await ctx.send(embed=embed)
-
-
-    @commands.command(help='General commands')
-    async def general(self, ctx):
-        embed =  discord.Embed(title="**General commands**", description=self.description)
-        for i in self.get_commands():
-            embed.add_field(name=f'*{i.name}', value=i.help)
+        
+        embed.set_thumbnail(url=str(member.avatar_url))
 
         await ctx.send(embed=embed)
 
-    @commands.command(help='Moderation commands')
-    async def moderation(self, ctx):
-        embed =  discord.Embed(title="**Moderation commands**", description=self.description)
-        for i in self.client.get_cog('Moderation').get_commands():
-            embed.add_field(name=f'*{i.name}', value=i.help)
-
-    @commands.command(help='go to the game page')
-    async def games(self, ctx):
-        embed = discord.Embed(title="Games", description="Welcome to game center")
-        embed.add_field(name="*dicegame", value="to play a dice game")
-        embed.add_field(name="*slot", value="to play a slot machhine")
-        embed.add_field(name="*roulette [number here]", value="to play roulette")
-        embed.add_field(name="*rps [choice here]", value="to play rock paper scissors")
-        embed.add_field(name="*yahtzee", value="to play yahtzee")
-        embed.add_field(name="*lottery <number1> <number2> <number3> <number4> <number5>", value="to have a round of a lottery")
-        embed.add_field(name='*akinator', value='Akinator, tries to guess whoever you are thinking about')
-        await ctx.send(embed=embed)
-
-    @commands.command(help='| Gives info on the server')
-    async def serverinfo(self, ctx, aliases=['si', 'serveri', 'servinfo', 'sinfo']):
+    @commands.command(help='Gives info on the server', aliases=['si', 'serveri', 'servinfo', 'sinfo'])
+    async def serverinfo(self, ctx):
         #ctx.send('coming soon :)')
         guild = ctx.guild
         now = str(date.today())
         channels = list()
         bots = list()
+        subs = list()
 
-        for i, x in guild.text_channels, guild.voice_channels:
+        for (i, x) in zip(guild.text_channels, guild.voice_channels):
             channels.append(i.name)
             channels.append(x.name)
 
+        for i in guild.premium_subscribers:
+            subs.append(i.mention)
+
         for i in guild.members:
             if i.bot:
-                bots.append(str(i))
+                bots.append(str(i.mention))
+
+        subs = str(subs)[1:-1]
+        subs = subs.replace("'", '')
+
+        if subs == '':
+            subs = None
+
+        bots = str(bots)[1:-1]
+        bots = bots.replace("'", '')
+
+        info_names = iter([
+            "Name:", 
+            "Created at:", 
+            'Owner:', 
+            "Guild Boosters:", 
+            'Bots:', 
+            "Highest Role:", 
+            'Member Count:', 
+            'Rules Channel:', 
+            'Id:'
+        ])
+
+        namecp = [
+            "Name:", 
+            "Created at:", 
+            'Owner:', 
+            "Guild Boosters:", 
+            'Bots:', 
+            "Highest Role:", 
+            'Member Count:', 
+            'Rules Channel:', 
+            'Id:'
+        ]
+
+        info_values = iter([
+            guild.name, 
+            guild.created_at.strftime('%A, %B %d, %Y %I:%M %p'), 
+            str(guild.owner), 
+            subs, 
+            bots, 
+            guild.roles[-1].mention, 
+            guild.member_count, 
+            guild.rules_channel.mention, 
+            guild.id
+        ])
 
         embed = discord.Embed(title="Server Info", color=discord.Colour.purple())
-        embed.add_field(name="Name:", value=guild.name, inline=True)
-        embed.add_field(name="Created at:", value=guild.created_at, inline=True)
-        embed.add_field(name='Owner:', value=guild.owner, inline=True)
-        embed.add_field(name='Owner Id:', value=guild.owner_id, inline=True)
-        embed.add_field(name='Channels:', value=channels, inline=True)
-        embed.add_field(name="Guild Boosters:", value=guild.premium_subcribers, inline=True)
-        embed.add_field(name='Bots:', value=bots, inline=True)
-        embed.add_field(name="Highest Role:", value=guild.roles[-1], inline=True)
-        embed.add_field(name='Roles:', value=guild.roles[::-1], inline=True)
-        embed.add_field(name='Member Count:', value=guild.member_count, inline=True)
-        embed.add_field(name='Rules Channel:', value=guild.rules_channel, inline=True)
-        embed.add_field(name='Id:', value=guild.id, inline=True)
+
+        for _ in range(len(namecp)):   
+            embed.add_field(name=next(info_names), value=next(info_values), inline=True)
+
+        embed.set_thumbnail(url=str(guild.icon_url))
 
         embed.set_footer(text=f"Treasure • {now}")
         await ctx.send(embed=embed)
 
 
-    @commands.command()
+    @commands.command(help='Solves math equasion')
     async def math(self, ctx, eqa: str):
         for it in eqa:
             if it in ascii_letters:
@@ -129,9 +151,21 @@ class General(commands.Cog):
                 return
 
         eqa.replace('^', '**')
-        ctx.send(simple_eval(eqa))
+        await ctx.send(eval(eqa))
 
-    
+
+    @commands.command(name='poll', description=pollDesu)
+    async def _poll(self, ctx, *, question: str, channel = None):
+        """Creates a poll inside a discord embed"""
+
+        if question.lower()[-1] != "?":
+                question = f"{question}?"
+
+        embed = discord.Embed(title=f'Poll by {str(ctx.author)}', description=question, color=ctx.author.color())
+        sent = await ctx.send(embed=embed)
+
+        await sent.add_reaction('✅')
+        await sent.add_reaction('❌')
 
 
 def setup(client):

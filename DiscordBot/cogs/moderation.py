@@ -13,7 +13,7 @@ class Moderation(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    @commands.has_permissions(change_nickname=True, manage_nicknames=True)
+    @commands.has_permissions(manage_nicknames=True)
     @commands.command(help='| Changes a users nickname', aliases=['nickname', 'change_nickname', 'changenick', 'chn'])
     async def nick(self, ctx, member: discord.Member, *, nickname):
         await member.edit(nick=nickname)
@@ -46,6 +46,48 @@ class Moderation(commands.Cog):
         )
         await member.send(embed=inked)
 
+    @commands.command(help='| bans given users')
+    @commands.has_permissions(ban_members=True)
+    async def prune(self, ctx, reason, *members):
+        if ctx.author in members:
+            await ctx.send("You cannot ban yourself")
+            return
+
+        if members == () or members == tuple():
+            await ctx.send('no list of members to ban given')
+            return
+
+        async for member in members:
+            if type(member) != discord.Member:
+                await ctx.send("")
+                
+
+        for member in members:
+            try:
+                await member.ban()
+            except discord.Forbidden:
+                await ctx.send(f" Unfortunately, {member.mention} cannot be banned by me. Insuffient permissions")
+            
+            try:
+                inked = discord.Embed(
+                        title=f'You have been banned from{member.guild.name}!',
+                        description=f'You have been banned for {reason}',
+                        colour=discord.Colour.dark_red()
+                    )
+                await member.send(embed=inked)
+            except discord.Forbidden:
+                await ctx.send(f'Cannot send {member} embed DM')
+            
+
+
+        ended = discord.Embed(
+            title=f'{ctx.message.author.name} has banned {member}',
+            colour=discord.Colour.red(),
+            description=f'{members} has been banned by {ctx.message.author.name}!'
+        )
+        ended.add_field(name='Reason:', value=reason)
+        await ctx.channel.send(embed=ended)
+
     @commands.command(help='| Removes given user from the server')
     @commands.has_permissions(kick_members=True)
     async def kick(self, ctx, member: discord.Member, *, reason=None):
@@ -64,11 +106,11 @@ class Moderation(commands.Cog):
 
     @commands.has_permissions(manage_messages=True)
     @commands.command(help='| deletes an amount of messages, default is 1')
-    async def clear(self, ctx, amount=1, member: discord.Member = None):
+    async def clear(self, ctx, amount=0, member: discord.Member = None):
         if member != None:
-            await ctx.channel.purge(limit=amount, check=lambda msg: msg.author == member)
+            await ctx.channel.purge(limit=amount+1, check=lambda msg: msg.author == member)
         else:
-            await ctx.channel.purge(limit=amount)
+            await ctx.channel.purge(limit=amount+1)
 
     @commands.has_permissions(ban_members=True)
     @commands.command(help='| unbans given user')
@@ -84,11 +126,21 @@ class Moderation(commands.Cog):
                 await ctx.channel.send(f"Unbanned: {str(user)}")
 
     @commands.has_permissions(ban_members=True)
-    @commands.command(help='| Temporarily bans a member. Put quotes around the time you want to ban the person.')
-    async def tempban(self, ctx, member: discord.Member, time: str, reason):
-        time = time.split(' ')
+    @commands.command()
+    async def tempban(self, ctx, member: discord.Member, reason, *time: str):
+        """Temporarily bans a member. Put quotes around the time you want to ban the person.
+        
+        Time codes: 
 
-        for tim in time:
+            s: seconds
+            m: minutes
+            h: hours
+            d: days
+            w: weeks
+        """
+        
+
+        for x, tim in enumerate(time):
             if tim[-1] == 'h':
                 time = int(tim[:-1]) * 3600
             elif tim[-1] == 'm':
