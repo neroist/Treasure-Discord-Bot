@@ -2,8 +2,7 @@
 
 A general use discord bot for all 
 kinds of servers with extra support
-for minecraft servers. Email me at 
-hanime.code@gmail.com.
+for minecraft servers. 
 
 [Also, Join the help Discord Server.][1]
 
